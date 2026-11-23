@@ -1,0 +1,58 @@
+{
+	"name": "dw_gold_dim_paciente_sql",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_dw_hospital_sql",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "gold"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "paciente_key",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "patient_id_bk",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "nombre_completo",
+				"type": "nvarchar"
+			},
+			{
+				"name": "genero",
+				"type": "varchar"
+			},
+			{
+				"name": "fecha_nacimiento",
+				"type": "date"
+			},
+			{
+				"name": "rango_etario",
+				"type": "varchar"
+			},
+			{
+				"name": "correo_electronico",
+				"type": "varchar"
+			},
+			{
+				"name": "direccion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "proveedor_seguro",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "gold",
+			"table": "dim_paciente"
+		}
+	}
+}
