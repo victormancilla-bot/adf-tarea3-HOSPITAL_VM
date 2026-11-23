@@ -1,0 +1,114 @@
+{
+	"name": "df_silver_billing",
+	"properties": {
+		"folder": {
+			"name": "Silver"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "dw_bronze_billing_sql",
+						"type": "DatasetReference"
+					},
+					"name": "srcbronzebilling"
+				},
+				{
+					"dataset": {
+						"referenceName": "dw_silver_admissions_sql",
+						"type": "DatasetReference"
+					},
+					"name": "srcsilveradmissions"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "dw_silver_billing_sql",
+						"type": "DatasetReference"
+					},
+					"name": "sinksilverbilling"
+				}
+			],
+			"transformations": [
+				{
+					"name": "dclimpiezabilling"
+				},
+				{
+					"name": "fltvalidbilling"
+				},
+				{
+					"name": "exadmissionexists"
+				},
+				{
+					"name": "arupsertbilling"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          billing_id as string,",
+				"          admission_id as string,",
+				"          charge_type as string,",
+				"          amount as string,",
+				"          payment_status as string,",
+				"          payment_date as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> srcbronzebilling",
+				"source(output(",
+				"          admission_id as integer,",
+				"          patient_id as integer,",
+				"          admission_date as date,",
+				"          discharge_date as date,",
+				"          department as string,",
+				"          attending_doctor_id as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> srcsilveradmissions",
+				"srcbronzebilling derive(billing_id = toInteger(trim(billing_id)),",
+				"          admission_id = toInteger(trim(admission_id)),",
+				"          charge_type = iif(isNull(charge_type) || trim(charge_type) == '', 'Unknown', trim(charge_type)),",
+				"          amount = toDecimal(round(toDouble(regexReplace(coalesce(amount, ''), '[^0-9.-]', '')), 2), 12, 2),",
+				"          payment_status = case(lower(trim(payment_status)) == 'paid', 'Paid', lower(trim(payment_status)) == 'unpaid', 'Unpaid', lower(trim(payment_status)) == 'pending', 'Pending', lower(trim(payment_status)) == 'overdue', 'Overdue', trim(payment_status)),",
+				"          payment_date = coalesce(toDate(trim(payment_date), 'yyyy-MM-dd'), toDate(trim(payment_date), 'MM/dd/yyyy'), toDate(trim(payment_date), 'dd-MMM-yyyy'), toDate(trim(payment_date), 'MMMM dd, yyyy'), toDate(trim(payment_date), 'MM-dd-yy'))) ~> dclimpiezabilling",
+				"dclimpiezabilling filter(!isNull(billing_id) && !isNull(admission_id) && !isNull(amount) && amount > 0 && !isNull(charge_type) && !isNull(payment_status)) ~> fltvalidbilling",
+				"fltvalidbilling, srcsilveradmissions exists(dclimpiezabilling@admission_id == srcsilveradmissions@admission_id,",
+				"     negate:false,",
+				"     broadcast: 'auto')~> exadmissionexists",
+				"exadmissionexists alterRow(upsertIf(true())) ~> arupsertbilling",
+				"arupsertbilling sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          billing_id as integer,",
+				"          admission_id as integer,",
+				"          charge_type as string,",
+				"          amount as decimal(12,2),",
+				"          payment_status as string,",
+				"          payment_date as date",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:false,",
+				"     updateable:false,",
+				"     upsertable:true,",
+				"     keys:['billing_id'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          billing_id,",
+				"          admission_id,",
+				"          charge_type,",
+				"          amount,",
+				"          payment_status,",
+				"          payment_date",
+				"     )) ~> sinksilverbilling"
+			]
+		}
+	}
+}
