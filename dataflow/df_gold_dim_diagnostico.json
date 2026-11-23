@@ -6,11 +6,80 @@
 		},
 		"type": "MappingDataFlow",
 		"typeProperties": {
-			"sources": [],
-			"sinks": [],
-			"transformations": [],
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "dw_silver_diagnoses_sql",
+						"type": "DatasetReference"
+					},
+					"name": "srcsilverdiagnoses"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "dw_gold_dim_diagnostico_sql",
+						"type": "DatasetReference"
+					},
+					"name": "sinkdimdiagnostico"
+				}
+			],
+			"transformations": [
+				{
+					"name": "aggdiagnostico"
+				},
+				{
+					"name": "seldiagnostico"
+				},
+				{
+					"name": "ardiagnostico"
+				}
+			],
 			"scriptLines": [
-				""
+				"source(output(",
+				"          diagnosis_id as integer,",
+				"          admission_id as integer,",
+				"          icd_code as string,",
+				"          diagnosis_description as string,",
+				"          severity as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> srcsilverdiagnoses",
+				"srcsilverdiagnoses aggregate(groupBy(icd_code,",
+				"          severity),",
+				"     descripcion_patologia = first(diagnosis_description)) ~> aggdiagnostico",
+				"aggdiagnostico select(mapColumn(",
+				"          codigo_icd = icd_code,",
+				"          nivel_severidad = severity,",
+				"          descripcion_patologia",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> seldiagnostico",
+				"seldiagnostico alterRow(upsertIf(true())) ~> ardiagnostico",
+				"ardiagnostico sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          diagnostico_key as integer,",
+				"          codigo_icd as string,",
+				"          descripcion_patologia as string,",
+				"          nivel_severidad as string",
+				"     ),",
+				"     deletable:true,",
+				"     insertable:false,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     keys:['codigo_icd','nivel_severidad'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          codigo_icd,",
+				"          descripcion_patologia,",
+				"          nivel_severidad",
+				"     )) ~> sinkdimdiagnostico"
 			]
 		}
 	}
