@@ -1,0 +1,80 @@
+{
+	"name": "df_gold_dim_departamento",
+	"properties": {
+		"folder": {
+			"name": "gold"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "dw_silver_admissions_sql",
+						"type": "DatasetReference"
+					},
+					"name": "srcadm"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "dw_gold_dim_departamento_sql",
+						"type": "DatasetReference"
+					},
+					"name": "sinkdimdepartamento"
+				}
+			],
+			"transformations": [
+				{
+					"name": "aggdepartamento"
+				},
+				{
+					"name": "seldepartamento"
+				},
+				{
+					"name": "ardepartamento"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          admission_id as integer,",
+				"          patient_id as integer,",
+				"          admission_date as date,",
+				"          discharge_date as date,",
+				"          department as string,",
+				"          attending_doctor_id as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> srcadm",
+				"srcadm aggregate(groupBy(department),",
+				"     conteo_temp = count(admission_id)) ~> aggdepartamento",
+				"aggdepartamento select(mapColumn(",
+				"          nombre_departamento = department",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> seldepartamento",
+				"seldepartamento alterRow(upsertIf(true())) ~> ardepartamento",
+				"ardepartamento sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          departamento_key as integer,",
+				"          nombre_departamento as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:false,",
+				"     updateable:false,",
+				"     upsertable:true,",
+				"     keys:['nombre_departamento'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          nombre_departamento",
+				"     )) ~> sinkdimdepartamento"
+			]
+		}
+	}
+}
