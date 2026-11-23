@@ -1,0 +1,164 @@
+{
+	"name": "df_gold_dim_fecha",
+	"properties": {
+		"folder": {
+			"name": "gold"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "dw_silver_admissions_sql",
+						"type": "DatasetReference"
+					},
+					"name": "srcfechaingreso"
+				},
+				{
+					"dataset": {
+						"referenceName": "dw_silver_admissions_sql",
+						"type": "DatasetReference"
+					},
+					"name": "srcfechaalta"
+				},
+				{
+					"dataset": {
+						"referenceName": "dw_silver_billing_sql",
+						"type": "DatasetReference"
+					},
+					"name": "srcfechapago"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "dw_gold_dim_fecha_sql",
+						"type": "DatasetReference"
+					},
+					"name": "sinkdimfecha"
+				}
+			],
+			"transformations": [
+				{
+					"name": "select0"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "unfechas"
+				},
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "aggfechas"
+				},
+				{
+					"name": "dcdimfecha"
+				},
+				{
+					"name": "alterRow1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          admission_id as integer,",
+				"          patient_id as integer,",
+				"          admission_date as date,",
+				"          discharge_date as date,",
+				"          department as string,",
+				"          attending_doctor_id as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> srcfechaingreso",
+				"source(output(",
+				"          admission_id as integer,",
+				"          patient_id as integer,",
+				"          admission_date as date,",
+				"          discharge_date as date,",
+				"          department as string,",
+				"          attending_doctor_id as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> srcfechaalta",
+				"source(output(",
+				"          billing_id as integer,",
+				"          admission_id as integer,",
+				"          charge_type as string,",
+				"          amount as decimal(12,2),",
+				"          payment_status as string,",
+				"          payment_date as date",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> srcfechapago",
+				"srcfechaingreso select(mapColumn(",
+				"          fecha_completa = admission_date",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select0",
+				"srcfechaalta select(mapColumn(",
+				"          fecha_completa = discharge_date",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"srcfechapago select(mapColumn(",
+				"          fecha_completa = payment_date",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"select0, select1, select2 union(byName: true)~> unfechas",
+				"unfechas filter(!isNull(fecha_completa)) ~> filter1",
+				"filter1 aggregate(groupBy(fecha_completa),",
+				"     fecha_key = min(toInteger(year(fecha_completa) * 10000 + month(fecha_completa) * 100 + dayOfMonth(fecha_completa)))) ~> aggfechas",
+				"aggfechas derive(anio = toShort(year(fecha_completa)),",
+				"          trimestre = case(month(fecha_completa) <= 3, 1, month(fecha_completa) <= 6, 2, month(fecha_completa) <= 9, 3, 4),",
+				"          trimestre_nombre = case(month(fecha_completa) <= 3, 'T1', month(fecha_completa) <= 6, 'T2', month(fecha_completa) <= 9, 'T3', 'T4'),",
+				"          mes = month(fecha_completa),",
+				"          mes_nombre = case(month(fecha_completa) == 1, 'Enero', month(fecha_completa) == 2, 'Febrero', month(fecha_completa) == 3, 'Marzo', month(fecha_completa) == 4, 'Abril', month(fecha_completa) == 5, 'Mayo', month(fecha_completa) == 6, 'Junio', month(fecha_completa) == 7, 'Julio', month(fecha_completa) == 8, 'Agosto', month(fecha_completa) == 9, 'Septiembre', month(fecha_completa) == 10, 'Octubre', month(fecha_completa) == 11, 'Noviembre', 'Diciembre'),",
+				"          mes_corto = case(month(fecha_completa) == 1, 'Ene', month(fecha_completa) == 2, 'Feb', month(fecha_completa) == 3, 'Mar', month(fecha_completa) == 4, 'Abr', month(fecha_completa) == 5, 'May', month(fecha_completa) == 6, 'Jun', month(fecha_completa) == 7, 'Jul', month(fecha_completa) == 8, 'Ago', month(fecha_completa) == 9, 'Sep', month(fecha_completa) == 10, 'Oct', month(fecha_completa) == 11, 'Nov', 'Dic'),",
+				"          semana_anio = weekOfYear(fecha_completa),",
+				"          dia_mes = dayOfMonth(fecha_completa),",
+				"          dia_semana = iif(dayOfWeek(fecha_completa) == 1, 7, dayOfWeek(fecha_completa) - 1),",
+				"          dia_nombre = case(dayOfWeek(fecha_completa) == 2, 'Lunes', dayOfWeek(fecha_completa) == 3, 'Martes', dayOfWeek(fecha_completa) == 4, 'Miércoles', dayOfWeek(fecha_completa) == 5, 'Jueves', dayOfWeek(fecha_completa) == 6, 'Viernes', dayOfWeek(fecha_completa) == 7, 'Sábado', 'Domingo'),",
+				"          es_fin_de_semana = dayOfWeek(fecha_completa) == 1 || dayOfWeek(fecha_completa) == 7) ~> dcdimfecha",
+				"dcdimfecha alterRow(upsertIf(true())) ~> alterRow1",
+				"alterRow1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          fecha_key as integer,",
+				"          fecha_completa as date,",
+				"          anio as integer,",
+				"          trimestre as integer,",
+				"          trimestre_nombre as string,",
+				"          mes as integer,",
+				"          mes_nombre as string,",
+				"          mes_corto as string,",
+				"          semana_anio as integer,",
+				"          dia_mes as integer,",
+				"          dia_semana as integer,",
+				"          dia_nombre as string,",
+				"          es_fin_de_semana as boolean",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:false,",
+				"     updateable:false,",
+				"     upsertable:true,",
+				"     keys:['fecha_key'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sinkdimfecha"
+			]
+		}
+	}
+}
