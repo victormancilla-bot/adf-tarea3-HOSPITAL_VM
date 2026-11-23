@@ -71,7 +71,7 @@
 				"          phone = first(phone),",
 				"          email = first(email),",
 				"          insurance_provider = first(insurance_provider)) ~> aggdeduppatients",
-				"aggdeduppatients alterRow(updateIf(true())) ~> arupsertpatients",
+				"aggdeduppatients alterRow(upsertIf(true())) ~> arupsertpatients",
 				"arupsertpatients sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
