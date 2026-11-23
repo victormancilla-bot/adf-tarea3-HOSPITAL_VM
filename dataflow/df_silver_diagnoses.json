@@ -1,0 +1,126 @@
+{
+	"name": "df_silver_diagnoses",
+	"properties": {
+		"folder": {
+			"name": "Silver"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "dw_bronze_diagnoses_sql",
+						"type": "DatasetReference"
+					},
+					"name": "srcbronzediagnoses"
+				},
+				{
+					"dataset": {
+						"referenceName": "dw_silver_admissions_sql",
+						"type": "DatasetReference"
+					},
+					"name": "srcsilveradmissions"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "dw_silver_diagnoses_sql",
+						"type": "DatasetReference"
+					},
+					"name": "sinksilverdiagnoses"
+				}
+			],
+			"transformations": [
+				{
+					"name": "dclimpiezadiagnoses"
+				},
+				{
+					"name": "dcformatoicd"
+				},
+				{
+					"name": "fltvaliddiagnoses"
+				},
+				{
+					"name": "exadmissionexists"
+				},
+				{
+					"name": "selsilverdiagnoses"
+				},
+				{
+					"name": "arupsertdiagnoses"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          diagnosis_id as string,",
+				"          admission_id as string,",
+				"          icd_code as string,",
+				"          diagnosis_description as string,",
+				"          severity as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> srcbronzediagnoses",
+				"source(output(",
+				"          admission_id as integer,",
+				"          patient_id as integer,",
+				"          admission_date as date,",
+				"          discharge_date as date,",
+				"          department as string,",
+				"          attending_doctor_id as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> srcsilveradmissions",
+				"srcbronzediagnoses derive(diagnosis_id = toInteger(trim(diagnosis_id)),",
+				"          admission_id = toInteger(trim(admission_id)),",
+				"          icd_raw = regexReplace(upper(trim(split(icd_code, ',')[1])), '[^A-Z0-9]', ''),",
+				"          diagnosis_description = trim(diagnosis_description),",
+				"          severity = case(isNull(severity) || trim(severity) == '', 'Unknown', lower(trim(severity)) == 'mild', 'Mild', lower(trim(severity)) == 'moderate', 'Moderate', lower(trim(severity)) == 'severe', 'Severe', lower(trim(severity)) == 'critical', 'Critical', trim(severity))) ~> dclimpiezadiagnoses",
+				"dclimpiezadiagnoses derive(icd_code = iif(length(icd_raw) > 3, left(icd_raw, 3) + '.' + substring(icd_raw, 4, 20), icd_raw)) ~> dcformatoicd",
+				"dcformatoicd filter(!isNull(diagnosis_id) && !isNull(admission_id) && !isNull(icd_code) && icd_code != '') ~> fltvaliddiagnoses",
+				"fltvaliddiagnoses, srcsilveradmissions exists(dclimpiezadiagnoses@admission_id == srcsilveradmissions@admission_id,",
+				"     negate:false,",
+				"     broadcast: 'auto')~> exadmissionexists",
+				"exadmissionexists select(mapColumn(",
+				"          diagnosis_id,",
+				"          admission_id,",
+				"          icd_code,",
+				"          diagnosis_description,",
+				"          severity",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selsilverdiagnoses",
+				"selsilverdiagnoses alterRow(upsertIf(true())) ~> arupsertdiagnoses",
+				"arupsertdiagnoses sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          diagnosis_id as integer,",
+				"          admission_id as integer,",
+				"          icd_code as string,",
+				"          diagnosis_description as string,",
+				"          severity as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:false,",
+				"     updateable:false,",
+				"     upsertable:true,",
+				"     keys:['diagnosis_id'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          diagnosis_id,",
+				"          admission_id,",
+				"          icd_code,",
+				"          diagnosis_description,",
+				"          severity",
+				"     )) ~> sinksilverdiagnoses"
+			]
+		}
+	}
+}
