@@ -56,7 +56,7 @@
 				"srcbronzepatients derive(patient_id = toInteger(trim(patient_id)),",
 				"          full_name = trim(replace(full_name, 'Â', '')),",
 				"          gender = case(lower(trim(gender)) == 'm' || lower(trim(gender)) == 'male', 'M', lower(trim(gender)) == 'f' || lower(trim(gender)) == 'female', 'F', toString(null())),",
-				"          dob_raw = coalesce(toDate(trim(date_of_birth), 'yyyy-MM-dd'), toDate(trim(date_of_birth), 'MM/dd/yyyy'), toDate(trim(date_of_birth), 'dd-MMM-yyyy'), toDate(trim(date_of_birth), 'MMMM dd, yyyy'), toDate(trim(date_of_birth), 'MM-dd-yy')),",
+				"          dob_raw = iif(length(trim(date_of_birth)) == 8, toDate(trim(date_of_birth), 'MM-dd-yy'), coalesce(toDate(trim(date_of_birth), 'yyyy-MM-dd'), toDate(trim(date_of_birth), 'MM/dd/yyyy'), toDate(trim(date_of_birth), 'dd-MMM-yyyy'), toDate(trim(date_of_birth), 'MMMM dd, yyyy'))),",
 				"          phone_digits = regexReplace(coalesce(phone, ''), '[^0-9]', ''),",
 				"          email = iif(isNull(email) || trim(email) == '', toString(null()), replace(replace(replace(lower(trim(email)), ' at ', '@'), '@gmial.com', '@gmail.com'), ',com', '.com')),",
 				"          address = trim(address),",

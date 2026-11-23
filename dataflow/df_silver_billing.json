@@ -75,7 +75,7 @@
 				"          charge_type = iif(isNull(charge_type) || trim(charge_type) == '', 'Unknown', trim(charge_type)),",
 				"          amount = toDecimal(round(toDouble(regexReplace(coalesce(amount, ''), '[^0-9.-]', '')), 2), 12, 2),",
 				"          payment_status = case(lower(trim(payment_status)) == 'paid', 'Paid', lower(trim(payment_status)) == 'unpaid', 'Unpaid', lower(trim(payment_status)) == 'pending', 'Pending', lower(trim(payment_status)) == 'overdue', 'Overdue', trim(payment_status)),",
-				"          payment_date = coalesce(toDate(trim(payment_date), 'yyyy-MM-dd'), toDate(trim(payment_date), 'MM/dd/yyyy'), toDate(trim(payment_date), 'dd-MMM-yyyy'), toDate(trim(payment_date), 'MMMM dd, yyyy'), toDate(trim(payment_date), 'MM-dd-yy'))) ~> dclimpiezabilling",
+				"          payment_date = iif(length(trim(payment_date)) == 8, toDate(trim(payment_date), 'MM-dd-yy'), coalesce(toDate(trim(payment_date), 'yyyy-MM-dd'), toDate(trim(payment_date), 'MM/dd/yyyy'), toDate(trim(payment_date), 'dd-MMM-yyyy'), toDate(trim(payment_date), 'MMMM dd, yyyy')))) ~> dclimpiezabilling",
 				"dclimpiezabilling filter(!isNull(billing_id) && !isNull(admission_id) && !isNull(amount) && amount > 0 && !isNull(charge_type) && !isNull(payment_status)) ~> fltvalidbilling",
 				"fltvalidbilling, srcsilveradmissions exists(dclimpiezabilling@admission_id == srcsilveradmissions@admission_id,",
 				"     negate:false,",
