@@ -89,7 +89,6 @@
 				"     updateable:false,",
 				"     upsertable:true,",
 				"     keys:['patient_id'],",
-				"     skipKeyWrites:true,",
 				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
