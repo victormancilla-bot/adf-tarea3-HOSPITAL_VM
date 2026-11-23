@@ -1,0 +1,42 @@
+{
+	"name": "dw_silver_diagnoses_sql",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_dw_hospital_sql",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "silver"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "diagnosis_id",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "admission_id",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "icd_code",
+				"type": "varchar"
+			},
+			{
+				"name": "diagnosis_description",
+				"type": "nvarchar"
+			},
+			{
+				"name": "severity",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "silver",
+			"table": "diagnoses"
+		}
+	}
+}
