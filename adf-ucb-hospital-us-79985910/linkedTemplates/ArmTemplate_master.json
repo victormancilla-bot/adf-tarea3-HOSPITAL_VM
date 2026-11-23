@@ -7,19 +7,19 @@
 			"metadata": "Nombre de instancia de Data Factory",
 			"defaultValue": "adf-ucb-hospital-us-79985910"
 		},
-		"AzureSqlDatabase1_password": {
+		"ls_dw_hospital_sql_password": {
 			"type": "secureString",
-			"metadata": "Cadena protegida para \"password\"de \"AzureSqlDatabase1\""
+			"metadata": "Cadena protegida para \"password\"de \"ls_dw_hospital_sql\""
 		},
-		"AzureSqlDatabase1_properties_typeProperties_server": {
+		"ls_dw_hospital_sql_properties_typeProperties_server": {
 			"type": "string",
 			"defaultValue": "sql-ucb-server-hospital-79985910.database.windows.net"
 		},
-		"AzureSqlDatabase1_properties_typeProperties_database": {
+		"ls_dw_hospital_sql_properties_typeProperties_database": {
 			"type": "string",
 			"defaultValue": "dw_hospital"
 		},
-		"AzureSqlDatabase1_properties_typeProperties_userName": {
+		"ls_dw_hospital_sql_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "victor"
 		},
@@ -50,17 +50,17 @@
 					"factoryName": {
 						"value": "[parameters('factoryName')]"
 					},
-					"AzureSqlDatabase1_password": {
-						"value": "[parameters('AzureSqlDatabase1_password')]"
+					"ls_dw_hospital_sql_password": {
+						"value": "[parameters('ls_dw_hospital_sql_password')]"
 					},
-					"AzureSqlDatabase1_properties_typeProperties_server": {
-						"value": "[parameters('AzureSqlDatabase1_properties_typeProperties_server')]"
+					"ls_dw_hospital_sql_properties_typeProperties_server": {
+						"value": "[parameters('ls_dw_hospital_sql_properties_typeProperties_server')]"
 					},
-					"AzureSqlDatabase1_properties_typeProperties_database": {
-						"value": "[parameters('AzureSqlDatabase1_properties_typeProperties_database')]"
+					"ls_dw_hospital_sql_properties_typeProperties_database": {
+						"value": "[parameters('ls_dw_hospital_sql_properties_typeProperties_database')]"
 					},
-					"AzureSqlDatabase1_properties_typeProperties_userName": {
-						"value": "[parameters('AzureSqlDatabase1_properties_typeProperties_userName')]"
+					"ls_dw_hospital_sql_properties_typeProperties_userName": {
+						"value": "[parameters('ls_dw_hospital_sql_properties_typeProperties_userName')]"
 					}
 				}
 			},

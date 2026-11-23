@@ -7,19 +7,19 @@
 			"metadata": "Nombre de instancia de Data Factory",
 			"defaultValue": "adf-ucb-hospital-us-79985910"
 		},
-		"AzureSqlDatabase1_password": {
+		"ls_dw_hospital_sql_password": {
 			"type": "secureString",
-			"metadata": "Cadena protegida para \"password\"de \"AzureSqlDatabase1\""
+			"metadata": "Cadena protegida para \"password\"de \"ls_dw_hospital_sql\""
 		},
-		"AzureSqlDatabase1_properties_typeProperties_server": {
+		"ls_dw_hospital_sql_properties_typeProperties_server": {
 			"type": "string",
 			"defaultValue": "sql-ucb-server-hospital-79985910.database.windows.net"
 		},
-		"AzureSqlDatabase1_properties_typeProperties_database": {
+		"ls_dw_hospital_sql_properties_typeProperties_database": {
 			"type": "string",
 			"defaultValue": "dw_hospital"
 		},
-		"AzureSqlDatabase1_properties_typeProperties_userName": {
+		"ls_dw_hospital_sql_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "victor"
 		}
@@ -29,22 +29,22 @@
 	},
 	"resources": [
 		{
-			"name": "[concat(parameters('factoryName'), '/AzureSqlDatabase1')]",
+			"name": "[concat(parameters('factoryName'), '/ls_dw_hospital_sql')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"annotations": [],
 				"type": "AzureSqlDatabase",
 				"typeProperties": {
-					"server": "[parameters('AzureSqlDatabase1_properties_typeProperties_server')]",
-					"database": "[parameters('AzureSqlDatabase1_properties_typeProperties_database')]",
+					"server": "[parameters('ls_dw_hospital_sql_properties_typeProperties_server')]",
+					"database": "[parameters('ls_dw_hospital_sql_properties_typeProperties_database')]",
 					"encrypt": "mandatory",
 					"trustServerCertificate": false,
 					"authenticationType": "SQL",
-					"userName": "[parameters('AzureSqlDatabase1_properties_typeProperties_userName')]",
+					"userName": "[parameters('ls_dw_hospital_sql_properties_typeProperties_userName')]",
 					"password": {
 						"type": "SecureString",
-						"value": "[parameters('AzureSqlDatabase1_password')]"
+						"value": "[parameters('ls_dw_hospital_sql_password')]"
 					}
 				}
 			},
