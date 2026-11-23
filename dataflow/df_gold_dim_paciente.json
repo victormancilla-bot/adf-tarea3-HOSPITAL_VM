@@ -1,0 +1,94 @@
+{
+	"name": "df_gold_dim_paciente",
+	"properties": {
+		"folder": {
+			"name": "gold"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "dw_silver_patients_sql",
+						"type": "DatasetReference"
+					},
+					"name": "srcsilverpatients"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "dw_gold_dim_paciente_sql",
+						"type": "DatasetReference"
+					},
+					"name": "sinkdimpaciente"
+				}
+			],
+			"transformations": [
+				{
+					"name": "dcdimpaciente"
+				},
+				{
+					"name": "arpaciente"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          patient_id as integer,",
+				"          full_name as string,",
+				"          gender as string,",
+				"          date_of_birth as date,",
+				"          phone as string,",
+				"          email as string,",
+				"          address as string,",
+				"          insurance_provider as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> srcsilverpatients",
+				"srcsilverpatients derive(patient_id_bk = patient_id,",
+				"          nombre_completo = full_name,",
+				"          genero = case(gender == 'M', 'Masculino', gender == 'F', 'Femenino', 'Otro'),",
+				"          fecha_nacimiento = date_of_birth,",
+				"          rango_etario = iif(isNull(date_of_birth), toString(null()), case(year(currentDate()) - year(date_of_birth) <= 18, '0-18', year(currentDate()) - year(date_of_birth) <= 35, '19-35', year(currentDate()) - year(date_of_birth) <= 60, '36-60', '60+')),",
+				"          correo_electronico = email,",
+				"          direccion = address,",
+				"          proveedor_seguro = coalesce(insurance_provider, 'Sin Seguro')) ~> dcdimpaciente",
+				"dcdimpaciente alterRow(upsertIf(true())) ~> arpaciente",
+				"arpaciente sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          paciente_key as integer,",
+				"          patient_id_bk as integer,",
+				"          nombre_completo as string,",
+				"          genero as string,",
+				"          fecha_nacimiento as date,",
+				"          rango_etario as string,",
+				"          correo_electronico as string,",
+				"          direccion as string,",
+				"          proveedor_seguro as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:false,",
+				"     updateable:false,",
+				"     upsertable:true,",
+				"     keys:['patient_id_bk'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          patient_id_bk,",
+				"          nombre_completo,",
+				"          genero,",
+				"          fecha_nacimiento,",
+				"          rango_etario,",
+				"          correo_electronico,",
+				"          direccion,",
+				"          proveedor_seguro",
+				"     )) ~> sinkdimpaciente"
+			]
+		}
+	}
+}
